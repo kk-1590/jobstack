@@ -44,6 +44,10 @@ app.get("/", (req, res) => {
   res.send("Hello world");
 });
 
+app.get('/api/v1/test',(req,res) => {
+  res.json({msg : 'test route'})
+});
+
 // app.post(
 //   "/api/v1/test",
 //   validateTest,
