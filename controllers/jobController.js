@@ -14,9 +14,45 @@ import dayjs from "dayjs";
 
 export const getAllJobs = async (req, res) => {
   // console.log(jobss);
+  console.log(req.query);
   console.log(req.user);
-  const jobs = await Job.find({ createdBy: req.user.userId });
-  res.status(StatusCodes.OK).json({ jobs });
+
+  const {search,jobStatus,jobType,sort} = req.query;
+
+  const queryObject = {
+    createdBy : req.user.userId,
+    // jobStatus,
+  }
+
+  if(search){
+    // queryObject.position = req.query.search
+    queryObject.$or = [
+      {position : {$regex : search, $options : 'i'}},
+      {company : {$regex : search , $options : 'i'}}
+    ]
+  }
+
+  if(jobStatus && jobStatus !== 'all'){
+    queryObject.jobStatus = jobStatus;
+  }
+
+  if(jobType && jobType !== 'all'){
+    queryObject.jobType = jobType;
+  }
+
+  const sortOptions = {
+    newest : '-createdAt',
+    oldest : 'createdAt',
+    'a-z'  : 'position',
+    'z-a' : '-position'
+  }
+
+  const sortKey = sortOptions[sort] || sortOptions.newest;
+
+  const jobs = await Job.find(queryObject)/*.sort('position')*/.sort(sortKey).skip().limit();
+
+  const totalJobs = await Job.countDocuments(queryObject);
+  res.status(StatusCodes.OK).json({totalJobs, jobs });
 };
 
 export const createJob = async (req, res) => {
@@ -100,19 +136,18 @@ export const deleteJob = async (req, res) => {
 };
 
 export const showStats = async (req, res, next) => {
-
   let stats = await Job.aggregate([
-    {$match : {createdBy : new mongoose.Types.ObjectId(req.user.userId)}},
-    {$group : {_id : '$jobStatus',count : {$sum : 1}}},
-  ])
+    { $match: { createdBy: new mongoose.Types.ObjectId(req.user.userId) } },
+    { $group: { _id: "$jobStatus", count: { $sum: 1 } } },
+  ]);
 
   console.log(stats);
 
-  stats = stats.reduce((acc,curr) => {
-      const {_id:title,count} = curr
-      acc[title] = count
-      return acc;
-  },{});
+  stats = stats.reduce((acc, curr) => {
+    const { _id: title, count } = curr;
+    acc[title] = count;
+    return acc;
+  }, {});
 
   console.log(stats);
 
@@ -123,13 +158,15 @@ export const showStats = async (req, res, next) => {
   };
 
   let monthlyApplications = await Job.aggregate([
-    {$match : {createdBy : new mongoose.Types.ObjectId(req.user.userId)}},
-    {$group : {
-      _id : {year : {$year : '$createdAt' },month : {$month : '$createdAt'}},
-      count : {$sum : 1},
-    }},
-    {$sort : {'_id.year' : -1,'_id.month': -1} },
-    {$limit : 6}
+    { $match: { createdBy: new mongoose.Types.ObjectId(req.user.userId) } },
+    {
+      $group: {
+        _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } },
+        count: { $sum: 1 },
+      },
+    },
+    { $sort: { "_id.year": -1, "_id.month": -1 } },
+    { $limit: 6 },
   ]);
 
   // let arr = [];
@@ -145,13 +182,21 @@ export const showStats = async (req, res, next) => {
 
   // console.log(arr);
 
-  monthlyApplications = monthlyApplications.map((item) => {
-    const {_id:{year,month},count} = item;
+  monthlyApplications = monthlyApplications
+    .map((item) => {
+      const {
+        _id: { year, month },
+        count,
+      } = item;
 
-    const date = day().month(month - 1).year(year).format('MMM YY');
+      const date = day()
+        .month(month - 1)
+        .year(year)
+        .format("MMM YY");
 
-    return {date,count};
-  }).reverse();
+      return { date, count };
+    })
+    .reverse();
 
   // let monthlyApplications = [
   //   {
@@ -167,5 +212,5 @@ export const showStats = async (req, res, next) => {
   //       count: 3,
   //     },
   // ];
-  res.status(StatusCodes.OK).json({defaultStats,monthlyApplications});
+  res.status(StatusCodes.OK).json({ defaultStats, monthlyApplications });
 };
