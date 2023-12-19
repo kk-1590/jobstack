@@ -24,7 +24,7 @@ export const authenticateUser = (req, res, next) => {
 
 
 export const authorizePermissions = (...roles) => {
-  console.log(roles);
+  // console.log(roles);
 
   return (req,res,next) => {
     if(!roles.includes(req.user.role)){
