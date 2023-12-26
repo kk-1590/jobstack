@@ -2,13 +2,13 @@ import "express-async-errors";
 import * as dotenv from "dotenv";
 dotenv.config();
 import express from "express";
+import helmet from "helmet";
+import mongoSanitize from "express-mongo-sanitize";
 import morgan from "morgan";
 import mongoose from "mongoose";
 import cookieParser from "cookie-parser";
 
-import cloudinary from 'cloudinary';
-
-
+import cloudinary from "cloudinary";
 
 // import { validateTest } from "./middleware/validationMiddleware.js";
 
@@ -19,13 +19,12 @@ import userRouter from "./routes/userRouter.js";
 
 //public
 
-import {dirname} from 'path'
+import { dirname } from "path";
 import { fileURLToPath } from "url";
 import path from "path";
 
-
 import errorHandlerMiddleware from "./middleware/errorHandlerMiddleware.js";
-import {authenticateUser} from "./middleware/authMiddleware.js";
+import { authenticateUser } from "./middleware/authMiddleware.js";
 
 const app = express();
 
@@ -51,7 +50,7 @@ cloudinary.config({
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-app.use(express.static(path.resolve(__dirname,'./client/dist')))
+app.use(express.static(path.resolve(__dirname, "./client/dist")));
 
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
@@ -60,14 +59,16 @@ if (process.env.NODE_ENV === "development") {
 app.use(cookieParser());
 // app.use(morgan('dev'));
 app.use(express.json());
+app.use(helmet());
+app.use(mongoSanitize());
 
 // app.get("/", (req, res) => {
 //   res.send("Hello world");
 // });
 
-app.get('/api/v1/test',(req,res) => {
-  res.json({msg : 'test route'})
-});
+// app.get("/api/v1/test", (req, res) => {
+//   res.json({ msg: "test route" });
+// });
 
 // app.post(
 //   "/api/v1/test",
@@ -102,11 +103,11 @@ app.get('/api/v1/test',(req,res) => {
 // app.delete('/api/v1/jobs/:id',)
 
 app.use("/api/v1/jobs", authenticateUser, jobRouter);
-app.use('/api/v1/users',authenticateUser,userRouter);
-app.use('/api/v1/auth',authRouter);
+app.use("/api/v1/users", authenticateUser, userRouter);
+app.use("/api/v1/auth", authRouter);
 
-app.get('*',(req,res) => {
-  res.sendFile(path.resolve(__dirname,'./client/dist','index.html'));
+app.get("*", (req, res) => {
+  res.sendFile(path.resolve(__dirname, "./client/dist", "index.html"));
 });
 
 app.use("*", (req, res) => {

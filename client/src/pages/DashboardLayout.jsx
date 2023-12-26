@@ -11,6 +11,7 @@ import { createContext, useContext, useState } from "react";
 import customFetch from "../utils/customFetch";
 import { toast } from "react-toastify";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 const userQuery = {
   queryKey: ["user"],
@@ -49,6 +50,8 @@ const DashboardLayout = ({ isDarkThemeEnabled, queryClient }) => {
 
   const [isDarkTheme, setIsDarkTheme] = useState(isDarkThemeEnabled);
 
+  const [isAuthError, setIsAuthError] = useState(false);
+
   const toggleDarkTheme = () => {
     const newDarkTheme = !isDarkTheme;
     setIsDarkTheme(newDarkTheme);
@@ -69,6 +72,23 @@ const DashboardLayout = ({ isDarkThemeEnabled, queryClient }) => {
     queryClient.invalidateQueries();
     toast.success("Logging out...");
   };
+
+  customFetch.interceptors.response.use(
+    (response) => {
+      return response;
+    },
+    (error) => {
+      if (error?.response?.status === 401) {
+        setIsAuthError(true);
+      }
+      return Promise.reject(error);
+    }
+  );
+
+  useEffect(() => {
+    if (!isAuthError) return;
+    logoutUser();
+  }, [isAuthError]);
 
   return (
     <DashboardContext.Provider
