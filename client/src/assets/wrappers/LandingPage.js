@@ -46,5 +46,5 @@ const Wrapper = styled.section`
       display: block;
     }
   }
-`;
+`
 export default Wrapper;
