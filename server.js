@@ -59,7 +59,19 @@ if (process.env.NODE_ENV === "development") {
 app.use(cookieParser());
 // app.use(morgan('dev'));
 app.use(express.json());
-app.use(helmet());
+// app.use(helmet());
+
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults : true,
+      directives: {
+        "img-src": ["'self'", "https: data: blob:"],
+      },
+    },
+  })
+);
+
 app.use(mongoSanitize());
 
 // app.get("/", (req, res) => {
